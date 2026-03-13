@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURORA · precision guess</title>
+    <!-- Google Font & modern icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0f1e;
+            --bg-card: #141b2b;
+            --surface: #1e2a3a;
+            --surface-light: #2a384b;
+            --accent-primary: #5f7ef2;
+            --accent-glow: #3b5ad9;
+            --accent-success: #2ecc71;
+            --accent-warning: #f39c12;
+            --accent-danger: #e74c3c;
+            --text-primary: #f0f4fa;
+            --text-secondary: #b0c4de;
+            --text-muted: #7f8fa6;
+            --border-glow: rgba(95, 126, 242, 0.3);
+            --shadow-heavy: 0 20px 35px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.02);
+            --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: radial-gradient(circle at 50% 50%, #1a2538, #0b111e);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            color: var(--text-primary);
+        }
+
+        /* game container */
+        .game-arena {
+            width: 100%;
+            max-width: 580px;
+            perspective: 2500px;
+        }
+
+        .card-3d {
+            position: relative;
+            width: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .card-face {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            background: var(--bg-card);
+            border-radius: 3rem;
+            padding: 2.8rem 2.2rem;
+            box-shadow: var(--shadow-heavy);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(8px);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .front {
+            transform: rotateY(0deg);
+        }
+
+        .back {
+            transform: rotateY(180deg);
+            position: absolute;
+            top: 0;
+            left: 0;
+            min-height: 100%;
+        }
+
+        /* typography */
+        .glow-text {
+            font-size: 2.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #bdd3ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.02em;
+            margin-bottom: 1.2rem;
+            text-shadow: 0 0 15px var(--accent-primary);
+        }
+
+        .title-badge {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .title-badge i {
+            color: var(--accent-primary);
+            font-size: 2.2rem;
+        }
+
+        /* timer ring */
+        .timer-container {
+            background: var(--surface);
+            border-radius: 100px;
+            padding: 0.3rem;
+            margin: 0.5rem 0 1.2rem;
+            border: 1px solid #2e4057;
+        }
+
+        #sec {
+            font-size: 3.8rem;
+            font-weight: 700;
+            font-feature-settings: "tnum";
+            background: linear-gradient(145deg, #1b2b3f, #0f1a28);
+            padding: 0.5rem 2.8rem;
+            border-radius: 80px;
+            color: #b3e0ff;
+            box-shadow: inset 0 3px 8px #00000055, 0 5px 15px #1f344b;
+            border: 1px solid #3f556b;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #sec i {
+            font-size: 2.5rem;
+            color: #6d8eb0;
+        }
+
+        /* input group */
+        .input-group {
+            width: 100%;
+            margin: 1.5rem 0 1.8rem;
+        }
+
+        .guess-input {
+            width: 100%;
+            background: var(--surface);
+            border: 2px solid #2f4057;
+            border-radius: 4rem;
+            padding: 1.4rem 2rem;
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: white;
+            text-align: center;
+            outline: none;
+            transition: var(--transition-smooth);
+            font-family: 'Space Grotesk', monospace;
+        }
+
+        .guess-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px var(--border-glow);
+            background: #1e3142;
+        }
+
+        .guess-input::placeholder {
+            color: #546b7f;
+            font-size: 1.2rem;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+
+        /* hint/warning chip */
+        #warn {
+            background: rgba(220, 70, 70, 0.15);
+            border: 1px solid #c94a4a;
+            color: #ffb8b8;
+            padding: 0.6rem 2rem;
+            border-radius: 40px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            margin: 0.3rem 0 0.5rem;
+            backdrop-filter: blur(5px);
+        }
+
+        /* button styles */
+        .btn {
+            border: none;
+            background: var(--surface-light);
+            color: white;
+            font-weight: 600;
+            font-size: 1.3rem;
+            padding: 1.2rem 2.2rem;
+            border-radius: 4rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 6px 0 #0f1725, 0 12px 20px -10px black;
+            border: 1px solid #3f5068;
+            width: fit-content;
+            min-width: 220px;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, #4a6cf7, #2f4ad0);
+            box-shadow: 0 6px 0 #192b60, 0 10px 25px -5px #1e3f9c;
+            border-color: #7994ff;
+        }
+
+        .btn-success {
+            background: linear-gradient(145deg, #1e9b5a, #136f40);
+            box-shadow: 0 6px 0 #0b4025;
+            border-color: #45c87c;
+        }
+
+        .btn-outline {
+            background: transparent;
+            box-shadow: none;
+            border: 2px solid #4f6683;
+            color: #c9dfff;
+        }
+
+        .btn-sm {
+            min-width: 150px;
+            padding: 0.9rem 1.5rem;
+            font-size: 1.1rem;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #0f1725;
+        }
+
+        .btn i {
+            font-size: 1.5rem;
+        }
+
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: center;
+            margin: 0.8rem 0;
+        }
+
+        /* modern popup modal */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 8, 22, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #1b2638;
+            max-width: 420px;
+            width: 90%;
+            border-radius: 3rem;
+            padding: 2.8rem 2rem;
+            box-shadow: 0 40px 60px -10px black, 0 0 0 1px #445c78;
+            border: 1px solid #6e8bb0;
+            position: relative;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            font-size: 2.6rem;
+            margin-bottom: 1.2rem;
+            background: linear-gradient(135deg, #f4cda6, #ffb27a);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .modal-content p {
+            font-size: 1.4rem;
+            color: #b6d0e8;
+            margin: 1.2rem 0 2rem;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 18px; right: 22px;
+            background: none;
+            border: none;
+            color: #9bb5d4;
+            font-size: 2.2rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .modal-close:hover {
+            color: white;
+        }
+
+        /* difficulty panel — glass */
+        .difficulty-panel {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+        }
+
+        .difficulty-card {
+            background: #13202e;
+            border-radius: 4rem;
+            padding: 3rem 2.2rem;
+            width: 380px;
+            border: 1px solid #3a5a78;
+            box-shadow: 0 30px 50px #00000080;
+        }
+
+        .difficulty-card h2 {
+            font-size: 2.5rem;
+            color: white;
+            margin-bottom: 2.2rem;
+            font-weight: 500;
+        }
+
+        .diff-btn {
+            width: 100%;
+            margin: 10px 0;
+            background: #1e3347;
+            border: 1px solid #52718e;
+            justify-content: space-between;
+            font-size: 1.4rem;
+            padding: 1.2rem 2rem;
+        }
+
+        .diff-btn span {
+            background: #2a4157;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 1.3rem;
+            color: #b7dcff;
+        }
+
+        /* stats panel */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            background: var(--surface);
+            padding: 0.8rem 2rem;
+            border-radius: 60px;
+            margin: 0.8rem 0 0.5rem;
+            border: 1px solid #384d64;
+            font-weight: 500;
+        }
+
+        .stats span {
+            color: var(--accent-primary);
+            font-weight: 700;
+            font-size: 1.4rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-arena">
+        <div id="rot" class="card-3d">
+            <!-- FRONT - WELCOME -->
+            <div id="front" class="card-face front">
+                <h1 class="glow-text">AURORA</h1>
+                <div class="title-badge">
+                    <i class="fas fa-crown"></i>
+                    <span>guess mastery</span>
+                </div>
+                <button class="btn btn-primary" id="btn" onclick="startGame()">
+                    <i class="fas fa-play"></i> launch game
+                </button>
+                <div class="stats" style="margin-top: 2.5rem; background: #1a2637;">
+                    <span>0–100</span>
+                    <i class="fas fa-arrow-right"></i>
+                    <span>pro mode</span>
+                </div>
+            </div>
+
+            <!-- BACK - GAME -->
+            <div id="back" class="card-face back">
+                <div class="title-badge">
+                    <i class="fas fa-brain"></i>
+                    <span>predict the number</span>
+                </div>
+
+                <!-- timer & attempts -->
+                <div class="timer-container">
+                    <div id="sec"><i class="far fa-clock"></i> <span></span></div>
+                </div>
+
+                <div class="stats">
+                    <span><i class="fas fa-crosshairs"></i> attempts</span>
+                    <span id="attemptCounter">0</span>
+                </div>
+
+                <div id="warn">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="warnMsg">try again</span>
+                </div>
+
+                <div class="input-group">
+                    <input type="number" id="input" class="guess-input" placeholder="enter 0–100" min="0" max="100">
+                </div>
+
+                <div class="flex-row">
+                    <button class="btn btn-outline btn-sm" onclick="showHint()">
+                        <i class="fas fa-lightbulb"></i> hint
+                    </button>
+                    <button class="btn btn-success btn-sm" onclick="evaluateGuess()">
+                        <i class="fas fa-check"></i> guess
+                    </button>
+                </div>
+
+                <button class="btn btn-sm" style="background:#2f3f54;" onclick="openDifficultyPanel()">
+                    <i class="fas fa-sliders-h"></i> change difficulty
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HINT / WIN MODAL (pop) -->
+    <div id="pop" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closePopup()"><i class="fas fa-times"></i></button>
+            <h2 id="h3"></h2>
+            <p id="span"></p>
+            <button class="btn btn-primary" id="btn3" onclick="resetToDifficulty()"><i class="fas fa-redo-alt"></i> new round</button>
+        </div>
+    </div>
+
+    <!-- TIME OVER MODAL (pop8) -->
+    <div id="pop8" class="modal">
+        <div class="modal-content" style="border-color:#b3624b;">
+            <button class="modal-close" onclick="closeTimeOver()"><i class="fas fa-times"></i></button>
+            <h2 id="h31" style="color:#ffa270;">⏳</h2>
+            <p>time limit reached</p>
+            <button class="btn btn-primary" onclick="resetToDifficulty()"><i class="fas fa-sync-alt"></i> try again</button>
+        </div>
+    </div>
+
+    <!-- DIFFICULTY PANEL (pip) -->
+    <div id="pip" class="difficulty-panel">
+        <div class="difficulty-card">
+            <h2><i class="fas fa-gem" style="color:#7399da;"></i> select mastery</h2>
+            <button class="btn diff-btn" onclick="setDifficulty(60, 'easy')">
+                <span>🌱 easy</span> <span>60s</span>
+            </button>
+            <button class="btn diff-btn" onclick="setDifficulty(30, 'medium')">
+                <span>⚡ medium</span> <span>30s</span>
+            </button>
+            <button class="btn diff-btn" onclick="setDifficulty(15, 'hard')">
+                <span>🔥 hard</span> <span>15s</span>
+            </button>
+            <button class="btn diff-btn" onclick="setDifficulty(0, 'unlimited')">
+                <span>♾️ unlimited</span> <span>no timer</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- core state ----------
+            let secretNumber = Math.floor(Math.random() * 100) + 1;
+            let attempts = 0;
+            let timerInterval = null;
+            let currentDifficulty = 'easy';   // just for display
+            let unlimitedMode = false;
+
+            // elements
+            const front = document.getElementById('front');
+            const back = document.getElementById('back');
+            const rot = document.getElementById('rot');
+            const pip = document.getElementById('pip');
+            const pop = document.getElementById('pop');
+            const pop8 = document.getElementById('pop8');
+            const warn = document.getElementById('warn');
+            const warnMsg = document.getElementById('warnMsg');
+            const inputField = document.getElementById('input');
+            const secDisplay = document.getElementById('sec');
+            const secSpan = secDisplay.querySelector('span');
+            const h3 = document.getElementById('h3');
+            const span = document.getElementById('span');
+            const h31 = document.getElementById('h31');
+            const btn3 = document.getElementById('btn3');
+            const attemptSpan = document.getElementById('attemptCounter');
+
+            function updateAttemptDisplay() {
+                attemptSpan.textContent = attempts;
+            }
+
+            // stop timer
+            function stopTimer() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                secDisplay.style.display = 'none';
+            }
+
+            // reset game (keep secret? optional new)
+            function resetGame(newSecret = true) {
+                if (newSecret) secretNumber = Math.floor(Math.random() * 100) + 1;
+                attempts = 0;
+                updateAttemptDisplay();
+                stopTimer();
+                inputField.value = '';
+                warn.style.display = 'none';
+                closeAllPopups();
+            }
+
+            function closeAllPopups() {
+                pop.style.display = 'none';
+                pop8.style.display = 'none';
+            }
+
+            // show difficulty panel & stop timer
+            function showDifficultyPanel() {
+                stopTimer();
+                pip.style.display = 'flex';
+            }
+
+            // ---------- global ----------
+            window.startGame = function() {
+                front.style.display = 'none';
+                rot.style.transform = 'rotateY(180deg)';
+                back.style.display = 'flex';
+                resetGame(true);
+                showDifficultyPanel();  // force difficulty choice
+            };
+
+            window.openDifficultyPanel = function() {
+                stopTimer();
+                showDifficultyPanel();
+            };
+
+            window.setDifficulty = function(seconds, mode) {
+                unlimitedMode = (seconds === 0);
+                currentDifficulty = mode;
+                pip.style.display = 'none';
+
+                if (unlimitedMode) {
+                    secDisplay.style.display = 'none';
+                    stopTimer();
+                } else {
+                    startTimer(seconds);
+                }
+            };
+
+            function startTimer(seconds) {
+                stopTimer();
+                secDisplay.style.display = 'flex';
+                let remaining = seconds;
+                secSpan.textContent = remaining;
+
+                timerInterval = setInterval(() => {
+                    remaining--;
+                    secSpan.textContent = remaining >= 0 ? remaining : 0;
+
+                    if (remaining < 0) {
+                        stopTimer();
+                        pop8.style.display = 'flex';
+                        h31.textContent = '⏳ time over';
+                    }
+                }, 1000);
+            }
+
+            window.showHint = function() {
+                const raw = inputField.value.trim();
+                if (raw === '') {
+                    h3.textContent = 'hint';
+                    span.textContent = '⚠️ field is empty';
+                    btn3.style.display = 'none';
+                    pop.style.display = 'flex';
+                    return;
+                }
+                const guess = Number(raw);
+                if (isNaN(guess) || guess < 0 || guess > 100) {
+                    h3.textContent = 'hint';
+                    span.textContent = 'enter a valid number (0–100)';
+                    btn3.style.display = 'none';
+                    pop.style.display = 'flex';
+                    return;
+                }
+                let hintMsg = '';
+                if (guess < secretNumber) hintMsg = '📈 target is HIGHER';
+                else if (guess > secretNumber) hintMsg = '📉 target is LOWER';
+                else hintMsg = '🎯 exactly the number — click guess';
+                h3.textContent = 'hint';
+                span.textContent = hintMsg;
+                btn3.style.display = 'none';
+                pop.style.display = 'flex';
+            };
+
+            window.evaluateGuess = function() {
+                const raw = inputField.value.trim();
+                if (raw === '') {
+                    warnMsg.textContent = 'enter a number';
+                    warn.style.display = 'flex';
+                    return;
+                }
+                const guess = Number(raw);
+                if (isNaN(guess) || guess < 0 || guess > 100) {
+                    warnMsg.textContent = 'must be 0–100';
+                    warn.style.display = 'flex';
+                    return;
+                }
+
+                if (guess !== secretNumber) {
+                    warnMsg.textContent = '❌ not correct';
+                    warn.style.display = 'flex';
+                    attempts++;
+                    updateAttemptDisplay();
+                } else {
+                    // correct guess
+                    stopTimer();
+                    h3.textContent = '🏆 VICTORY';
+                    span.textContent = `You nailed it in ${attempts} attempt${attempts !== 1 ? 's' : ''}.`;
+                    btn3.style.display = 'inline-flex';
+                    pop.style.display = 'flex';
+                    warn.style.display = 'none';
+                }
+            };
+
+            window.closePopup = function() {
+                pop.style.display = 'none';
+            };
+            window.closeTimeOver = function() {
+                pop8.style.display = 'none';
+            };
+
+            window.resetToDifficulty = function() {
+                closeAllPopups();
+                resetGame(true);
+                showDifficultyPanel();
+            };
+
+            // old function name compatibility (cat, cat1, hyee etc.) but we keep clean
+            window.cat = window.closePopup;
+            window.cat1 = function() {
+                pop8.style.display = 'none';
+                resetGame(true);
+                showDifficultyPanel();
+            };
+            window.hyee = window.evaluateGuess;
+            window.hint = window.showHint;
+            window.reset = window.resetToDifficulty;
+            window.easy = () => setDifficulty(60, 'easy');
+            window.medium = () => setDifficulty(30, 'medium');
+            window.hard = () => setDifficulty(15, 'hard');
+            window.stat = window.startGame;
+
+            // initial hidden
+            back.style.display = 'none';
+            pip.style.display = 'none';
+            warn.style.display = 'none';
+            secDisplay.style.display = 'none';
+            updateAttemptDisplay();
+
+            // add unlimited mode call
+            window.setDifficulty(0, 'unlimited'); // not called, but function ready
+        })();
+    </script>
+</body>
+</html>
